@@ -36,12 +36,11 @@ def get_text_chunks(text):
 
 
 def get_vector_store(text_chunks):
-    # embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    # Use HuggingFace for both save & load for consistency
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
-
+    return vector_store
 
 def get_conversational_chain():
 
@@ -65,20 +64,27 @@ def get_conversational_chain():
 
 
 def user_input(user_question):
-    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
-    
-    new_db = FAISS.load_local("faiss_index", embeddings)
+    # Use the SAME embeddings class used when creating the index
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    try:
+        # allow_dangerous_deserialization=True allows loading the pickle — only do this for trusted files
+        new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+    except ValueError as e:
+        # fallback: helpful message and recreate index / ask user to re-upload
+        st.error("Could not load saved FAISS store safely. Recreating it from uploaded PDFs is safer.")
+        print("FAISS load error:", e)
+        return
+
     docs = new_db.similarity_search(user_question)
 
     chain = get_conversational_chain()
-
-    
     response = chain(
-        {"input_documents":docs, "question": user_question}
-        , return_only_outputs=True)
+        {"input_documents": docs, "question": user_question},
+        return_only_outputs=True
+    )
 
-    print(response)
     st.write("Reply: ", response["output_text"])
+
 
 
 
