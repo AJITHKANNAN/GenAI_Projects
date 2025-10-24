@@ -5,4 +5,6 @@ Each project demonstrates practical applications of Large Language Models (LLMs)
 
 The implementations highlight efficient prompt engineering, model integration, and evaluation workflows — designed for experimentation, learning, and real-world problem-solving with Gemini-based GenAI solutions.
 
---- END ---
+--- END --- 
+
+
